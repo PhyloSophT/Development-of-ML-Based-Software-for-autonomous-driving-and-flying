@@ -1,0 +1,14 @@
+path: C:\Users\phill\OneDrive\Desktop\Development of ML-Based Software for autonomous driving and flying\data.yaml
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['safety_vest']
+
+roboflow:
+  workspace: autonomousrover
+  project: safety_vests_rover2
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/autonomousrover/safety_vests_rover2/dataset/1
