@@ -3,12 +3,12 @@ train: ../train/images
 val: ../valid/images
 test: ../test/images
 
-nc: 1
-names: ['safety_vest']
+nc: 5
+names: ['helmet', 'no-helmet', 'no-vest', 'person', 'vest']
 
 roboflow:
   workspace: autonomousrover
-  project: safety_vests_rover2
+  project: construction-safety-gsnvb-pbydy
   version: 1
   license: CC BY 4.0
-  url: https://universe.roboflow.com/autonomousrover/safety_vests_rover2/dataset/1
+  url: https://universe.roboflow.com/autonomousrover/construction-safety-gsnvb-pbydy/dataset/1

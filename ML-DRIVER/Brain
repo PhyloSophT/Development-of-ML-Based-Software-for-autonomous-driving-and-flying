@@ -5,5 +5,5 @@ model = YOLO("yolov8n.pt")
 
 results = model.train(
     data="data.yaml",
-    epochs=10
+    epochs=3
 )

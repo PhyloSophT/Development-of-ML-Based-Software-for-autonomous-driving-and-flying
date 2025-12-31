@@ -1,4 +1,5 @@
 import cv2
+from collections import deque
 from ultralytics import YOLO
 
 stream_url = "http://192.168.0.166:8081"
@@ -10,8 +11,10 @@ if not cap.isOpened():
 
 cv2.namedWindow("YOLOv8 Detection", cv2.WINDOW_NORMAL)
 cv2.resizeWindow("YOLOv8 Detection", 1280, 720)
+custom_model = r"C:\Users\phill\OneDrive\Desktop\Development of ML-Based Software for autonomous driving and flying\runs\detect\train\weights\best.pt"
+model = YOLO(custom_model)
 
-model = YOLO("yolov8n.pt")
+history = deque(maxlen=30)
 
 while True:
     ret, frame = cap.read()
@@ -21,16 +24,68 @@ while True:
 
     results = model.track(frame, conf=0.25, iou=0.5, tracker="bytetrack.yaml", persist=True)[0]
 
+    persons = []
+    vests = []
+
     for box in results.boxes:
         x1, y1, x2, y2 = map(int, box.xyxy[0])
         conf = float(box.conf[0])
         cls = int(box.cls[0])
+        label_name = model.names[cls]
         label = f"{model.names[cls]} {conf:.2f}"
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv2.putText(frame, label, (x1, y1 - 10),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        
+        if label_name == "person":
+            persons.append((x1, y1, x2, y2))
+        elif label_name == "vest":
+            vests.append((x1, y1, x2, y2))
 
+    
+    state = "default"
+    if persons:
+        has_vest = False
+
+        # naive overlap check (can be improved)
+        for (px1, py1, px2, py2) in persons:
+            for (vx1, vy1, vx2, vy2) in vests:
+                # compute intersection-over-union-ish overlap
+                ix1 = max(px1, vx1)
+                iy1 = max(py1, vy1)
+                ix2 = min(px2, vx2)
+                iy2 = min(py2, vy2)
+
+                if ix1 < ix2 and iy1 < iy2:
+                    has_vest = True
+                    break
+
+        state = "freeze" if has_vest else "chase"
+
+    history.append(state)
+
+    # compute final decision (80% rule)
+    freeze_pct = history.count("freeze") / len(history)
+    chase_pct = history.count("chase") / len(history)
+
+    final_state = "DEFAULT"
+    if freeze_pct >= 0.8:
+        final_state = "FREEZE"
+    elif chase_pct >= 0.8:
+        final_state = "CHASE"
+
+    # draw the state on screen
+    cv2.putText(
+        frame,
+        final_state,
+        (40, 60),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        2,
+        (0, 0, 255),
+        4,
+    )
+    
     cv2.imshow("YOLOv8 Detection", frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
